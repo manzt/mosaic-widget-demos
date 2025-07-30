@@ -23,7 +23,9 @@ def _(spec):
         "https://github.com/uwdata/mosaic/raw/refs/heads/main/data/protein-design.parquet"
     )
 
-    mo.ui.anywidget(MosaicWidget(spec, data={"proteins": proteins}))
+    mo.ui.anywidget(
+        MosaicWidget(spec, data={"proteins": proteins}, preagg_schema="mosaic")
+    )
     return
 
 

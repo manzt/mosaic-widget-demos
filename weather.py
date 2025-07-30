@@ -16,7 +16,7 @@ app = marimo.App(width="medium")
 
 @app.cell(hide_code=True)
 def _(mo, w):
-    _weather =  w.params["click"].get("value")
+    _weather = w.params["click"].get("value")
     _range = w.params["range"].get("value")
 
     if _range:
@@ -51,7 +51,9 @@ def _(spec):
         try_parse_dates=True,
     )
 
-    w = mo.ui.anywidget(MosaicWidget(spec, data={"weather": weather}))
+    w = mo.ui.anywidget(
+        MosaicWidget(spec, data={"weather": weather}, preagg_schema="mosaic")
+    )
     w
     return mo, pl, w, weather
 
@@ -66,19 +68,14 @@ def _(pl, w, weather):
     subset = weather
     if range:
         subset = subset.filter(
-            pl.col("date").ge(
-                pl.lit(range[0]).str.strptime(pl.Datetime).dt.date()
-            ),
-            pl.col("date").le(
-                pl.lit(range[1]).str.strptime(pl.Datetime).dt.date()
-            ),
+            pl.col("date").ge(pl.lit(range[0]).str.strptime(pl.Datetime).dt.date()),
+            pl.col("date").le(pl.lit(range[1]).str.strptime(pl.Datetime).dt.date()),
         )
 
     if categories:
         subset = subset.filter(
             pl.col("weather").is_in(categories[0]),
         )
-
 
     subset
     return
