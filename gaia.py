@@ -3,7 +3,6 @@
 # dependencies = [
 #     "duckdb==1.2.2",
 #     "marimo",
-#     "matplotlib==3.10.3",
 #     "mosaic-widget==0.18.0",
 #     "numpy==2.3.2",
 #     "polars==1.31.0",

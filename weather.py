@@ -3,14 +3,13 @@
 # dependencies = [
 #     "marimo",
 #     "mosaic-widget==0.18.0",
-#     "polars==1.31.0",
-#     "pyyaml==6.0.2",
+#     "sqlglot==27.5.1",
 # ]
 # ///
 
 import marimo
 
-__generated_with = "0.14.12"
+__generated_with = "0.14.13"
 app = marimo.App(width="medium")
 
 
@@ -39,46 +38,56 @@ def _(mo, w):
 
 
 @app.cell(hide_code=True)
-def _(spec):
-    import marimo as mo
-    import polars as pl
-    import yaml
+def _():
+    import duckdb
 
-    from mosaic_widget import MosaicWidget
+    con = duckdb.connect()
+    return (con,)
 
-    weather = pl.read_csv(
-        "https://uwdata.github.io/mosaic-datasets/data/seattle-weather.csv",
-        try_parse_dates=True,
+
+@app.cell
+def _(con, mo):
+    _df = mo.sql(
+        f"""
+        CREATE OR REPLACE TABLE weather AS SELECT * FROM "https://uwdata.github.io/mosaic-datasets/data/seattle-weather.csv"
+        """,
+        engine=con
     )
-
-    w = mo.ui.anywidget(
-        MosaicWidget(spec, data={"weather": weather}, preagg_schema="mosaic")
-    )
-    w
-    return mo, pl, w, weather
+    return
 
 
 @app.cell(hide_code=True)
-def _(pl, w, weather):
-    _filtered = weather
+def _(con, mo, spec):
+    from mosaic_widget import MosaicWidget
 
-    categories = w.params["click"].get("value")
-    range = w.params["range"].get("value")
+    w = mo.ui.anywidget(MosaicWidget(spec, con=con, preagg_schema="mosaic"))
+    w
+    return (w,)
 
-    subset = weather
-    if range:
-        subset = subset.filter(
-            pl.col("date").ge(pl.lit(range[0]).str.strptime(pl.Datetime).dt.date()),
-            pl.col("date").le(pl.lit(range[1]).str.strptime(pl.Datetime).dt.date()),
-        )
 
-    if categories:
-        subset = subset.filter(
-            pl.col("weather").is_in(categories[0]),
-        )
-
-    subset
+@app.cell
+def _(con, mo, where):
+    _df = mo.sql(
+        f"""
+        SELECT * FROM weather {where}
+        """,
+        engine=con
+    )
     return
+
+
+@app.cell
+def _(w):
+    predicates = " AND ".join([
+        pred for pred in
+        [
+            w.params.get("range").get("predicate"),
+            w.params.get("click").get("predicate"),
+        ]
+        if pred
+    ])
+    where = f"WHERE {predicates}" if predicates else ""
+    return (where,)
 
 
 @app.cell(hide_code=True)
@@ -161,6 +170,17 @@ def _():
         ],
     }
     return (spec,)
+
+
+@app.cell
+def _():
+    import marimo as mo
+    return (mo,)
+
+
+@app.cell
+def _():
+    return
 
 
 if __name__ == "__main__":
